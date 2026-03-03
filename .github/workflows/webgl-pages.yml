@@ -3,6 +3,7 @@ name: WebGL versioned Pages
 on:
   push:
     branches: [main]
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -101,3 +102,19 @@ jobs:
           publish_branch: gh-pages
           publish_dir: out
           keep_files: true
+
+      - name: Print deployed URLs
+        run: |
+          SHA="$(git rev-parse --short "$GITHUB_SHA")"
+          REPO="${GITHUB_REPOSITORY}"
+          OWNER="${REPO%%/*}"
+          REPONAME="${REPO##*/}"
+          BASE="https://${OWNER}.github.io/${REPONAME}"
+          echo ""
+          echo "=========================================="
+          echo "  Deployed URLs"
+          echo "=========================================="
+          echo "  Latest : ${BASE}/latest/"
+          echo "  This build : ${BASE}/builds/${SHA}/"
+          echo "  Root (redirect) : ${BASE}/"
+          echo "=========================================="
