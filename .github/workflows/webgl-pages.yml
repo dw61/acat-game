@@ -8,7 +8,7 @@ permissions:
   contents: write
 
 env:
-  BUILD_DIR: build/WebGL
+  BUILD_DIR: build/WebGL/WebGL
 
 jobs:
   build-and-publish:
@@ -85,6 +85,15 @@ jobs:
           mkdir -p out/builds/"$SHA" out/latest
           cp -r "$BUILD_DIR"/. out/builds/"$SHA"/
           cp -r "$BUILD_DIR"/. out/latest/
+          # Root redirect so https://dw61.github.io/acat-game/ goes to /latest/
+          cat > out/index.html <<'EOF'
+          <!DOCTYPE html>
+          <meta charset="utf-8">
+          <title>Redirecting…</title>
+          <link rel="canonical" href="latest/">
+          <script>location.replace("latest/" + location.search + location.hash)</script>
+          <meta http-equiv="refresh" content="0; url=latest/">
+          EOF
 
       - uses: peaceiris/actions-gh-pages@v4
         with:
