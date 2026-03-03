@@ -21,47 +21,45 @@ jobs:
           token: ${{ secrets.PAT_CLASSIC }}
           ref: main
 
-      - name: Free disk space (aggressive)
+      - name: Ensure enough disk space
         shell: bash
         run: |
           set -euxo pipefail
-          echo "Disk before cleanup"
-          df -h
-
-          sudo rm -rf /usr/local/lib/android \
-            /usr/share/dotnet \
-            /usr/share/swift \
-            /opt/ghc \
-            /usr/local/.ghcup \
-            /usr/local/julia* \
-            /usr/local/graalvm \
-            /usr/local/share/powershell \
-            /usr/local/share/chromium \
-            /opt/google/chrome \
-            /opt/microsoft \
-            /opt/az
-
-          # Keep Node for JavaScript-based actions; remove other toolcache payloads.
-          if [ -d /opt/hostedtoolcache ]; then
-            sudo find /opt/hostedtoolcache -mindepth 1 -maxdepth 1 ! -name node -exec rm -rf {} +
-          fi
-
-          sudo apt-get clean
-          sudo rm -rf /var/lib/apt/lists/*
-          sudo rm -rf /var/cache/apt/archives/*
-          docker system prune -af || true
-          docker builder prune -af || true
-
-          echo "Disk after cleanup"
-          df -h
-
-      - name: Verify free space
-        shell: bash
-        run: |
-          set -euo pipefail
+          MIN_GB=35
           FREE_GB="$(df --output=avail -BG / | tail -1 | tr -dc '0-9')"
-          echo "Free space on /: ${FREE_GB}G"
-          test "${FREE_GB}" -ge 35
+          echo "Free space on /: ${FREE_GB}G (need ${MIN_GB}G)"
+
+          if [ "${FREE_GB}" -ge "${MIN_GB}" ]; then
+            echo "Sufficient space — skipping cleanup"
+          else
+            echo "Not enough space — cleaning up"
+            sudo rm -rf /usr/local/lib/android \
+              /usr/share/dotnet \
+              /usr/share/swift \
+              /opt/ghc \
+              /usr/local/.ghcup \
+              /usr/local/julia* \
+              /usr/local/graalvm \
+              /usr/local/share/powershell \
+              /usr/local/share/chromium \
+              /opt/google/chrome \
+              /opt/microsoft \
+              /opt/az
+
+            if [ -d /opt/hostedtoolcache ]; then
+              sudo find /opt/hostedtoolcache -mindepth 1 -maxdepth 1 ! -name node -exec rm -rf {} +
+            fi
+
+            sudo apt-get clean
+            sudo rm -rf /var/lib/apt/lists/*
+            sudo rm -rf /var/cache/apt/archives/*
+            docker system prune -af || true
+            docker builder prune -af || true
+
+            FREE_GB="$(df --output=avail -BG / | tail -1 | tr -dc '0-9')"
+            echo "Free space after cleanup: ${FREE_GB}G"
+            test "${FREE_GB}" -ge "${MIN_GB}"
+          fi
 
       - uses: actions/cache@v4
         with:
@@ -81,7 +79,7 @@ jobs:
       - name: Prepare Pages output
         run: |
           set -euo pipefail
-          SHA="$(git rev-parse --short "$GITHUB_SHA")"
+          SHA="$(git rev-parse --short HEAD)"
           test -d "$BUILD_DIR"
           mkdir -p out/builds/"$SHA" out/latest
           cp -r "$BUILD_DIR"/. out/builds/"$SHA"/
@@ -105,7 +103,7 @@ jobs:
 
       - name: Print deployed URLs
         run: |
-          SHA="$(git rev-parse --short "$GITHUB_SHA")"
+          SHA="$(git rev-parse --short HEAD)"
           REPO="${GITHUB_REPOSITORY}"
           OWNER="${REPO%%/*}"
           REPONAME="${REPO##*/}"
