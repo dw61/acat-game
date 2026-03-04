@@ -91,17 +91,9 @@ jobs:
           set -euo pipefail
           SHA="$(git rev-parse --short HEAD)"
           test -d "$BUILD_DIR"
-          mkdir -p out/builds/"$SHA" out/latest
-          cp -r "$BUILD_DIR"/. out/builds/"$SHA"/
-          cp -r "$BUILD_DIR"/. out/latest/
-          cat > out/index.html <<'EOF'
-          <!DOCTYPE html>
-          <meta charset="utf-8">
-          <title>Redirecting…</title>
-          <link rel="canonical" href="latest/">
-          <script>location.replace("latest/" + location.search + location.hash)</script>
-          <meta http-equiv="refresh" content="0; url=latest/">
-          EOF
+          mkdir -p out/"$SHA"
+          cp -r "$BUILD_DIR"/. out/
+          cp -r "$BUILD_DIR"/. out/"$SHA"/
 
       - uses: peaceiris/actions-gh-pages@v4
         with:
@@ -121,7 +113,6 @@ jobs:
           echo "=========================================="
           echo "  Deployed URLs"
           echo "=========================================="
-          echo "  Latest : ${BASE}/latest/"
-          echo "  This build : ${BASE}/builds/${SHA}/"
-          echo "  Root (redirect) : ${BASE}/"
+          echo "  Latest : ${BASE}/"
+          echo "  Permalink : ${BASE}/${SHA}/"
           echo "=========================================="
