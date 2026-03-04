@@ -76,6 +76,18 @@ jobs:
         with:
           targetPlatform: WebGL
 
+      - name: Inject commit SHA into build
+        run: |
+          set -euo pipefail
+          SHA="$(git rev-parse --short HEAD)"
+          FULL_SHA="$(git rev-parse HEAD)"
+          BUILD_DATE="$(date -u '+%Y-%m-%d %H:%M UTC')"
+          UPSTREAM_REPO="CSCI-526/main-assignment-a-cat-a-mouse-and-a-house"
+          SNIPPET="<div id='build-info' style='position:fixed;bottom:4px;right:8px;font:11px/1.4 monospace;color:rgba(255,255,255,0.5);z-index:9999;pointer-events:auto;user-select:all'><a href='https://github.com/${UPSTREAM_REPO}/commit/${FULL_SHA}' target='_blank' style='color:inherit;text-decoration:none'>${SHA}</a> · ${BUILD_DATE}</div>"
+          for f in "$BUILD_DIR"/index.html; do
+            sed -i "s|</body>|${SNIPPET}</body>|" "$f"
+          done
+
       - name: Prepare Pages output
         run: |
           set -euo pipefail
@@ -84,7 +96,6 @@ jobs:
           mkdir -p out/builds/"$SHA" out/latest
           cp -r "$BUILD_DIR"/. out/builds/"$SHA"/
           cp -r "$BUILD_DIR"/. out/latest/
-          # Root redirect so https://dw61.github.io/acat-game/ goes to /latest/
           cat > out/index.html <<'EOF'
           <!DOCTYPE html>
           <meta charset="utf-8">
